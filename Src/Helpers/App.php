@@ -18,7 +18,7 @@ class App
 
     public function getEnvironment(): string
     {
-        return $this->config['env'] ?? 'production';
+        return $this->isTestMode() ? 'test' : $this->config['env'] ?? 'production';
     }
 
     public function getLogPath(): string
@@ -38,5 +38,18 @@ class App
     public function getServerTime(): \DateTimeInterface
     {
         return new \DateTime('now', new \DateTimeZone('Asia/Taipei'));
+    }
+
+    public function isTestMode(): bool
+    {
+        if (
+            $this->isRunningFromConsole() &&
+            defined('PHPUNIT_RUNNING') && 
+            PHPUNIT_RUNNING == true
+        ) {
+            return true;
+        }
+
+        return false;
     }
 }
