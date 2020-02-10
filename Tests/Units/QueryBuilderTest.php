@@ -6,6 +6,7 @@ use App\Helpers\Config;
 use App\Database\QueryBuilder;
 use App\Database\PDOConnection;
 use PHPUnit\Framework\TestCase;
+use App\Database\PDOQueryBuilder;
 
 class QueryBuilderTest extends TestCase
 {
@@ -13,27 +14,26 @@ class QueryBuilderTest extends TestCase
 
     public function setUp()
     {
-        $pdo = new PDOConnection(
+        $credentials = array_merge(
             Config::get('database', 'pdo'),
             ['db_name' => 'bug_app_test']
         );
+        $pdo = new PDOConnection($credentials);
 
-        $this->queryBuilder = new QueryBuilder($pdo->connect());
+        $this->queryBuilder = new PDOQueryBuilder($pdo->connect());
 
         parent::setUp();
     }
 
-    public function testBindings()
-    {
-        $query = $this->queryBuilder->where('id', 7)
-            ->where('report_type', '>=', '100');
-
-        self::assertIsArray($query->getPlaceholders());
-        self::assertIsArray($query->getBindings());
-    }
-
     public function testItCanCreateRecords()
     {
+        $data = [
+            'report_type' => 'Report Type 1', 
+            'message' => 'This is a dummy message',
+            'email' => 'support@email.com',
+            'link' => 'https://link.com',
+            'created_at' => date('Y-m-d H:i:s'),
+        ];
         $id = $this->queryBuilder->table('reports')->create($data);
 
         self::assertNotNull($id);
@@ -41,7 +41,7 @@ class QueryBuilderTest extends TestCase
 
     public function testItCanPerformRawQuery()
     {
-        $result = $this->queryBuilder->raw("SELECT * FROM reports;");
+        $result = $this->queryBuilder->raw("SELECT * FROM reports;")->get();
 
         self::assertNotNull($result);
     }
@@ -50,9 +50,8 @@ class QueryBuilderTest extends TestCase
     {
         $result = $this->queryBuilder->table('reports')
             ->select('*')
-            ->where('id', 1);
-
-        var_dump($result->query);
+            ->where('id', 1)
+            ->first();
 
         self::assertNotNull($result);
         self::assertSame(1, (int)$result->id);
