@@ -48,9 +48,8 @@ abstract class QueryBuilder
             }
         }
         $this->parseWhere([$column => $value], $operator);
-        $query = $this->prepare($this->getQuery($this->operation));
-   
-        $this->statement = $this->execute($query);
+
+        
 
         return $this;
     }
@@ -86,6 +85,7 @@ abstract class QueryBuilder
     public function update(array $data)
     {
         $this->fields = [];
+        $this->operation = self::DML_TYPE_UPDATE;
         foreach($data as $column => $value) {
             $this->fields[] = sprintf('%s%s%s', $column, self::OPERATORS[0], "'{$value}'");
         }
@@ -109,17 +109,30 @@ abstract class QueryBuilder
 
     public function find($id)
     {
-        return $this->where('id', $id)->first();
+        return $this->where('id', $id)->runQuery()->first();
     }
 
     public function findOneBy(string $field, $value)
     {
-        return $this->where($field, $value)->first();
+        return $this->where($field, $value)->runQuery()->first();
     }
 
     public function first()
     {
-        return $this->count() ? $this->get()[0] : "";
+        return $this->count() ? $this->get()[0] : null;
+    }
+
+    public function rollback(): void
+    {
+        $this->connection->rollback();
+    }
+
+    public function  runQuery()
+    {
+        $query = $this->prepare($this->getQuery($this->operation));
+        $this->statement = $this->execute($query);
+
+        return $this;
     }
 
     abstract public function get();
@@ -128,4 +141,6 @@ abstract class QueryBuilder
     abstract public function prepare($query);
     abstract public function execute($statement);
     abstract public function fetchInto($class);
+    abstract public function beginTransaction();
+    abstract public function affected();
 }

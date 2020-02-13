@@ -39,4 +39,14 @@ class PDOQueryBuilder extends QueryBuilder
     {
         return $this->statement->fetchAll(PDO::FETCH_CLASS, $class);
     }
+
+    public function beginTransaction()
+    {
+        $this->connection->beginTransaction();
+    }
+
+    public function affected()
+    {
+        return $this->count();
+    }
 }
